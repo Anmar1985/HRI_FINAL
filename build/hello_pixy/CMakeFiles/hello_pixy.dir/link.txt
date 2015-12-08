@@ -1,0 +1,1 @@
+/usr/bin/c++       CMakeFiles/hello_pixy.dir/hello_pixy.cpp.o  -o hello_pixy -rdynamic -lpixyusb -lboost_thread-mt -lpthread -lboost_system-mt -lboost_chrono-mt -lusb-1.0 

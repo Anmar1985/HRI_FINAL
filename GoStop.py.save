@@ -1,0 +1,103 @@
+import api
+import sys
+import time
+#import os
+#import struct
+from pixy import *
+from ctypes import *
+
+class Blocks (Structure):
+  _fields_ = [ ("type", c_uint),
+               ("signature", c_uint),
+               ("x", c_uint),
+               ("y", c_uint),
+               ("width", c_uint),
+               ("height", c_uint),
+               ("angle", c_uint) ]
+
+if __name__ == "__main__":
+  pixy_init()
+
+  blocks = BlockArray(100)
+  frame  = 0
+  standing = True
+
+  try:
+    if api.Initialize():
+      print("Initialized")
+    else:
+      print("Initialization failed")
+
+    # Servo limits:
+    # 3: 350-980
+    # 4: 640-60
+    while True:
+    # api.PlayAction(8)
+      count = pixy_get_blocks(100, blocks)
+      if count > 0:
+        # Blocks found #
+        print('frame %3d:' % (frame))
+        frame += 1
+        sawSig1, sawSig3 = False, False
+        y1, y3 = 0, 0
+        for index in range (0, count):
+          print('[BLOCK_TYPE=%d SIG=%d X=%3d Y=%3d WIDTH=%3d HEIGHT=%3d]' % 
+            (blocks[index].type, blocks[index].signature, blocks[index].x, blocks[index].y, blocks[index].width, blocks[index].height))
+          if blocks[index].signature == 1:
+            sawSig1 = True
+            y1 = blocks[index].y
+#          if blocks[index].signature == 3:
+#            sawSig3 = True
+#            y3 = blocks[index].y
+
+        
+#        servo3val = 3.95 * y1 + 203
+#        servo4val = -3.97 * y3 + 827.5
+#        if servo3val < 350:
+#          servo3val = 350
+#        if servo3val > 980:
+#          servo3val = 980
+#        if servo4val < 60:
+#          servo4val = 60
+#        if servo4val > 640:
+#          servo4val = 640
+#        servo3val = 980+350-servo3val
+#        servo4val = 640+60-servo4val
+        
+#        curr3 = api.getMotorValue(3)
+#        curr4 = api.getMotorValue(4)
+#        diff3 = int((servo3val - curr3) / 5)
+#        diff4 = int((servo4val - curr4) / 5)
+        if sawSig1:
+          #api.SetMotorValue(3, curr3 + diff3)
+#	  api.Walk(true)
+	  api.Walk
+	  sawSig1 = False
+	  print "ON   "
+#        if sawSig1 == False:
+          #api.SetMotorValue(4, curr4 + diff4)
+#	  api.WalkMove(5)
+#	  api.WalkMove(2)
+#	  api.Walk(0)
+#	  print "OFF"
+        time.sleep(0.5)
+
+  #         if standing and blocks[index].signature == 1 and blocks[index].x < 150:
+  #           print("Sitting down")
+  #           standing = False
+  #           api.PlayAction(15)
+  #           time.sleep(2)
+  #           break
+  #         elif not standing and blocks[index].signature == 1 and blocks[index].x >= 150:
+  #         # if blocks[index].signature == 3:
+  #           print("Standing up")
+  #           standing = True
+  #           api.PlayAction(8)
+  #           time.sleep(2)
+  #           break
+  except (KeyboardInterrupt):
+    api.ServoShutdown()
+    sys.exit()
+  except():
+    api.ServoShutdown()
+    sys.exit()

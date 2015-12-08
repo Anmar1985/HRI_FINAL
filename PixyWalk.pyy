@@ -1,0 +1,83 @@
+import api
+import sys
+import time
+#import os
+#import struct
+from pixy import *
+from ctypes import *
+
+class Blocks (Structure):
+  _fields_ = [ ("type", c_uint),
+               ("signature", c_uint),
+               ("x", c_uint),
+               ("y", c_uint),
+               ("width", c_uint),
+               ("height", c_uint),
+               ("angle", c_uint) ]
+
+if __name__ == "__main__":
+  pixy_init()
+
+  blocks = BlockArray(100)
+  frame  = 0
+  standing = True
+
+  try:
+    if api.Initialize():
+      print("Initialized")
+    else:
+      print("Initialization failed")
+
+    # Servo limits:
+    # 3: 350-980
+    # 4: 640-60
+    Walk = False 
+    Battery = api.BatteryVoltLevel()
+    Slack = 0
+    while True:
+     count = pixy_get_blocks(100, blocks)
+     #print(count)
+     if count > 0:
+        # Blocks found #
+        print('frame %3d:' % (frame), count)
+        frame += 1
+        sawSig1, sawSig2 = False, False
+        y1, y3 = 0, 0
+        for index in range (0, count):
+         print('[BLOCK_TYPE=%d SIG=%d X=%3d Y=%3d WIDTH=%3d HEIGHT=%3d]' % \
+            (blocks[index].type, blocks[index].signature, blocks[index].x, blocks[index].y, blocks[index].width, blocks[index].height))
+         if blocks[index].signature == 1:
+            sawSig1 = True
+            y1 = blocks[index].y
+	    print 'Sig1'
+	    break
+         if blocks[index].signature == 2:
+            sawSig2 = True
+            y2 = blocks[index].y
+            print 'Sig2'
+	    break
+         if sawSig2:
+	  print "Pink", Walk == False, Slack > 5
+	  if Walk == False and Slack > 5:   
+  	     api.Walk(True)
+	     api.WalkMove(10)
+	     Walk = True
+	     Slack = 0
+	     print 'Walk'
+         elif (sawSig1 or ~sawSig2) and Slack > 5:
+	   Walk = False
+	   api.Walk(False)
+	   Slack = 0
+	   print "Stop"
+         Slack = Slack + 1
+	#time.sleep(0.1)
+	 if Battery != api.BatteryVoltLevel():
+	   Battery = api.BatteryVoltLevel()
+	   #print api.BatteryVoltLevel()
+	 #print Slack
+  except (KeyboardInterrupt):
+    api.ServoShutdown()
+    sys.exit()
+  except():
+    api.ServoShutdown()
+    sys.exit()

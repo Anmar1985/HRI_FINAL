@@ -1,0 +1,1 @@
+/home/pi/pixy/build/hello_pixy/CMakeFiles/hello_pixy.dir
