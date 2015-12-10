@@ -78,9 +78,9 @@ if __name__ == "__main__":
     myo.vibrate(VibrationType.SHORT)
     walkFlag = 0
     if api.Initialize():
-      print("Initialized")
+      	print("Initialized")
     else:
-      print("Initialization Failed")
+      	print("Initialization Failed")
     Walk = False 
     Battery = api.BatteryVoltLevel()
     Slack = 0
@@ -95,7 +95,8 @@ if __name__ == "__main__":
         y1, y3 = 0, 0
         for index in range (0, count):
             #print('[BLOCK_TYPE=%d SIG=%d X=%3d Y=%3d WIDTH=%3d HEIGHT=%3d]' % \
-                (blocks[index].type, blocks[index].signature, blocks[index].x, blocks[index].y, blocks[index].width, blocks[index].height))
+             #   (blocks[index].type, blocks[index].signature, blocks[index].x, blocks[index].y, \
+             #blocks[index].width, blocks[index].height))
              if blocks[index].signature == 1:
                 sawSig2 = True
                 X = blocks[index].x
@@ -110,8 +111,8 @@ if __name__ == "__main__":
                  Color   = Colors.Blue.name
              else:
                 Color = Colors.Blank.name
-     #STATES
-     # Neutral
+     	#STATES
+     	# Neutral
         Time = time.clock - OldTime
         if FSM == 'NEUTRAL':
             if Color == 'Red' or Color == 'Blue' :  #Approach
@@ -139,7 +140,11 @@ if __name__ == "__main__":
                 elif Color == 'Blue':
                     FSM = States.BLUE_BULLY.name  # Switch to Blue Bully State
                     Blue = 1
+        # Red Bully
         elif FSM == 'RED_BULLY':
+             if Color != 'Red': # Relax
+                    Deffence(0)
+                    Bullyflag = 1
             if Color == 'Red':  # Defence
                 if Bullyflag == 1:
                     Deffence(1)
@@ -162,9 +167,6 @@ if __name__ == "__main__":
                     api.WalkMove(0)
                     api.Walk(False)
                     walkFlag = 0
-                if Color != 'Red': # Relax
-                    Deffence(0)
-                    Bullyflag = 1
             if Pose == 'FIST':  # Break the ice
                     if Red == 1
                         FSM = States.NEUTRAL.name #Switch to neutral
@@ -180,8 +182,11 @@ if __name__ == "__main__":
                         Red = Red + 1
                     else:
                         pass
-                        
+        #Blue Bully                
         elif FSM == 'BLUE_BULLY':
+            if Color != 'Blue': # Relax
+                    Deffence(0)
+                    Bullyflag = 1
             if Color == 'Blue':  # Defence
                 if Bullyflag == 1:
                     Deffence(1)
@@ -206,26 +211,46 @@ if __name__ == "__main__":
                     api.WalkMove(0)
                     api.Walk(False)
                     walkFlag = 0
-                if Color != 'Blue': # Relax
-                    Deffence(0)
-                    Bullyflag = 1
-
             if Pose == 'FINGERS_SPREAD':  # Break the ice
                 if Red == 1
                     FSM = States.NEUTRAL.name #Switch to neutral
                     else:
-                        Red = Red - 1
+                        Blue = Blue - 1
                         api.PlayAction() # Refuse page
             if Accel < 450:  # if pushed
                 GetUp()
                 if Color == 'Red':
                     FSM = States.BOTH_BULLIES.name  # Both bullies
-                    Blue = 1
+                    Red = 1
                 elif Color == 'Blue': # Hate more
-                    Red = Red + 1
+                    Blue = Blue + 1
                 else:
                     pass
         elif FSM == 'BOTH_BULLIES':
+			if Color == 'Red' or Color == 'Blue':
+				Deffence(0)
+				Bullyflag = 1
+            if Pose == 'FINGERS_SPREAD':  # Break the ice
+                if Red == 1
+                    FSM = States.BLUE_BULLY.name #Switch to Blue bully
+                else:
+                    Red = Red - 1
+                    api.PlayAction() # Refuse page
+            elif Pose == 'FIST':  # Break the ice
+                if Red == 1
+                    FSM = States.RED_BULLY.name #Switch to Red Bully
+                else:
+                    Red = Red - 1
+                    api.PlayAction() # Refuse page
+            if Accel < 450:  # if pushed
+                    GetUp()
+                    if Color == 'Blue':
+                        Blue = Blue + 1
+                    elif Color == 'Red': # Hate more
+                        Red = Red + 1
+                    else:
+                        pass
+                        
         sawSig1, sawSig2 = False, False
         if Battery != api.BatteryVoltLevel():
             Battery = api.BatteryVoltLevel()
@@ -233,13 +258,6 @@ if __name__ == "__main__":
         if int(Battery) < 100 and Battery != -1:
             api.Walk(False)
             api.ServoShutdown()
-        elif count < 1 and Walk == True and Slack > 50 :
-            api.WalkMove(0)
-            api.Walk(False)
-        print "Stop if not seeing anything"
-        Slack = 0
-        Walk = False
-
   except (KeyboardInterrupt):
     api.ServoShutdown()
     sys.exit()
