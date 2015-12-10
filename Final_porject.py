@@ -124,9 +124,11 @@ if __name__ == "__main__":
                             time.sleep(0.1)
                         walkFlag = 1
                     if X > 220 and blocks[index].width:
-                        api.WalkTurn(3)
+                        api.WalkTurn(5)
                     elif X < 180:
-                        api.WalkTurn(-3)
+                        api.WalkTurn(-5)
+                    else:
+                    	api.WalkTurn(0)
                 else:
                     api.WalkMove(0)
                     api.Walk(False)
@@ -142,9 +144,9 @@ if __name__ == "__main__":
                     Blue = 1
         # Red Bully
         elif FSM == 'RED_BULLY':
-             if Color != 'Red': # Relax
-                    Deffence(0)
-                    Bullyflag = 1
+            if Color != 'Red': # Relax
+                Deffence(0)
+                Bullyflag = 1
             if Color == 'Red':  # Defence
                 if Bullyflag == 1:
                     Deffence(1)
@@ -160,13 +162,17 @@ if __name__ == "__main__":
                             time.sleep(0.1)
                         walkFlag = 1
                     if X > 220 and blocks[index].width: #Adjust direction
-                        api.WalkTurn(3)
+                        api.WalkTurn(5)
                     elif X < 180:
-                        api.WalkTurn(-3)
+                        api.WalkTurn(-5)
+                    else:
+                    	api.WalkTurn(0)
                 else:
                     api.WalkMove(0)
                     api.Walk(False)
                     walkFlag = 0
+                    api.PlayAction()# Hug action
+
             if Pose == 'FIST':  # Break the ice
                     if Red == 1
                         FSM = States.NEUTRAL.name #Switch to neutral
@@ -211,6 +217,8 @@ if __name__ == "__main__":
                     api.WalkMove(0)
                     api.Walk(False)
                     walkFlag = 0
+                    api.PlayAction()# Hug action
+
             if Pose == 'FINGERS_SPREAD':  # Break the ice
                 if Red == 1
                     FSM = States.NEUTRAL.name #Switch to neutral
