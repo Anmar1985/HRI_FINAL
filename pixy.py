@@ -14,6 +14,7 @@ if version_info >= (2,6,0):
         fp = None
         try:
             fp, pathname, description = imp.find_module('_pixy', [dirname(__file__)])
+	    print str(pathname),str(fp),str(description)
         except ImportError:
             import _pixy
             return _pixy
