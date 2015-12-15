@@ -11,14 +11,14 @@ from ctypes import *
 from enum import Enum
 
 global Pose
-
-CHUNK = 2048
+timethresh = 2.0
+CHUNK = 22050
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 44100
-THRESHOLD = 100
+THRESHOLD = 700
 snapflag = 1
-
+relax = 0
 class States(Enum):
 	NEUTRAL    = 0
 	RED_BULLY  = 1
@@ -99,12 +99,14 @@ if __name__ == "__main__":
      if(rms>THRESHOLD and snapflag == 1):
        snapflag = 2
        Pose ='FIST'
+       firstclaptime = float(time.clock())
+       print "timers",firstclaptime , time.clock()
        print "<<<=======Single Tap=====>>>"
-     elif(rms>THRESHOLD and snapflag == 2):
-       snapflag = 0
+     elif(rms>THRESHOLD and snapflag == 2 and ((time.clock() - firstclaptime ) < timethresh)):
+       snapflag = 1
        Pose ='FINGER_SPREAD'
        print "<<<======Finger Spread ====>>>"
-     elif(rms>THRESHOLD and snapflag == 0):
+     elif(rms>THRESHOLD and snapflag == 2 and ((time.clock() - firstclaptime ) > timethresh)):
 	snapflag = 1
 	Pose = 'Blank'
 	print"<<======No Pose=====>>>>>"
@@ -119,22 +121,22 @@ if __name__ == "__main__":
         sawSig1, sawSig2 = False, False
         y1, y3 = 0, 0
         for index in range (0, count):
-           #  print('[BLOCK_TYPE=%d SIG=%d X=%3d Y=%3d WIDTH=%3d HEIGHT=%3d]' % \
-            #    (blocks[index].type, blocks[index].signature, blocks[index].x, blocks[index].y,blocks[index].width, blocks[index].height))
-             if blocks[index].signature == 1:
+             print('[BLOCK_TYPE=%d SIG=%d X=%3d Y=%3d WIDTH=%3d HEIGHT=%3d]' % \
+               (blocks[index].type, blocks[index].signature, blocks[index].x, blocks[index].y,blocks[index].width, blocks[index].height))
+             if blocks[index].signature == 4:
                 sawSig2 = True
                 X = blocks[index].x
-             elif blocks[index].signature == 3:
+             elif blocks[index].signature == 5:
                 sawSig1 = True
                 X = blocks[index].x
              if sawSig1:
                  OldTime = time.clock()
-                 Color   = Colors.Red.name
-		 print ("Color = Red")
-             elif (sawSig2):
-                 OldTime = time.clock()
                  Color   = Colors.Blue.name
 		 print ("Color = Blue")
+             elif (sawSig2):
+                 OldTime = time.clock()
+                 Color   = Colors.Red.name
+		 print ("Color = Green")
              else:
 		OldTime = time.clock()
 		print ("Color = Else")
@@ -145,7 +147,7 @@ if __name__ == "__main__":
         if FSM == 'NEUTRAL':
 	    print("Working in Neutral")
             if Accel < 550 and Accel > 450 and (Color == 'Red' or Color == 'Blue'):
-                if blocks[index].width < 30:
+                if (blocks[index].width < 100 and Color == 'Blue') or  (blocks[index].width < 160 and Color == 'Red'):
                     if walkFlag == 0:
 			hug_flag = 0
 			print("Approach")
@@ -154,10 +156,10 @@ if __name__ == "__main__":
                             api.WalkMove(Speed)
                             time.sleep(0.1)
                         walkFlag = 1
-                    if X > 220 and blocks[index].width:
-                        api.WalkTurn(5)
-                    elif X < 180:
+                    if X > 220 :
                         api.WalkTurn(-5)
+                    elif X < 180:
+                        api.WalkTurn(5)
                     else:
                     	api.WalkTurn(0)
                 else:
@@ -173,18 +175,20 @@ if __name__ == "__main__":
         # Red Bully
         elif FSM == 'RED_BULLY':
 	    print("Working in RED bully")
-            if Color != 'Red' and Accel < 550 and Accel >450: # Relax
+            if Color != 'Red' and Accel < 550 and Accel >450 and relax == 1: # Relax
                 Deffence(0)
                 Bullyflag = 1
 		print("Relax")
+		relax = 0
             if Color == 'Red' and Accel < 550 and Accel >450:  # Defence
                 if Bullyflag == 1:
                     Deffence(1)
                     Bullyflag = 0
    		    print("Defend")
+		    relax = 1
             elif Color == 'Blue' and Accel < 550 and Accel >450:  #Approach
 		print("Approach")
-                if blocks[index].width < 20:
+                if blocks[index].width < 100:
                     if walkFlag == 0:
 			hug_flag = 0
                         api.Walk(True)
@@ -192,13 +196,13 @@ if __name__ == "__main__":
                             api.WalkMove(Speed)
                             time.sleep(0.1)
                         walkFlag = 1
-                    if X > 220 and blocks[index].width: #Adjust direction
-                        api.WalkTurn(5)
-                    elif X < 180:
+                    if X > 220: #Adjust direction
                         api.WalkTurn(-5)
+                    elif X < 180:
+                        api.WalkTurn(5)
                     else:
                     	api.WalkTurn(0)
-                else:
+                elif blocks[index].width > 100:
 		  if hug_flag == 0:
 		    print("Stop")
                     api.WalkMove(0)
@@ -211,27 +215,29 @@ if __name__ == "__main__":
         #Blue Bully                
         elif FSM == 'BLUE_BULLY':
 	    print "Working in BLUE bully"
-            if Color != 'Blue' and Accel < 550 and Accel >450: # Relax
+            if Color != 'Blue' and Accel < 550 and Accel >450 and relax == 1: # Relax
                     Deffence(0)
                     Bullyflag = 1
+		    relax = 0
             if Color == 'Blue' and Accel < 550 and Accel >450:  # Defence
                 if Bullyflag == 1:
                     Deffence(1)
                     Bullyflag = 0
-                else:
-                    pass
+                    relax = 1
             elif Color == 'Red' and Accel < 550 and Accel >450:  #Approach
-                if blocks[index].width < 20:
+                if blocks[index].width < 160:
                     if walkFlag == 0:
                         api.Walk(True)
                         for Speed in range(0,10):
-                            api.WalMove(Speed)
+                            api.WalkMove(Speed)
                             time.sleep(0.1)
                         walkFlag = 1
-                    if X > 220 and blocks[index].width: #Adjust direction
-                        api.WalkTurn(3)
+                    if X > 220: #Adjust direction
+                        api.WalkTurn(-5)
                     elif X < 180:
-                        api.WalkTurn(-3)
+                        api.WalkTurn(5)
+		    else :
+			api.WalkTurn(0)
                 else:
                   if hug_flag == 0:
                     api.WalkMove(0)
@@ -256,7 +262,7 @@ if __name__ == "__main__":
         api.Walk(False)
         walkFlag = 0
      print "Last color = " , Color
-     if (Accel > 590 or Accel < 450 ) and (Accel < 900) and( Color == 'Red' or Color == 'Blue'):
+     if (Accel > 590 and Accel < 700 ) or (Accel < 420 and Accel > 300) and( Color == 'Red' or Color == 'Blue'):
                 print("Fall")
                 GetUp()
                 if Color == 'Red' and FSM == 'NEUTRAL':
